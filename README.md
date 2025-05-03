@@ -1,4 +1,3 @@
-````markdown
 # Automatic License Plate Recognition (ALPR)
 
 ## Project Overview
@@ -63,7 +62,6 @@ Automatic License Plate Recognition (ALPR) is a deep learning pipeline designed 
 3. Run detection:
    ```bash
    python pipeline.py --model yolov8 --input data/images --output results/
-````
 
 4. Run OCR:
 
