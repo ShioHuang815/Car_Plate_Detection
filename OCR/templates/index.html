@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Plate Detection & OCR</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --yolo-color: #9b59b6;
+            --ocr-color: #3498db;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: var(--dark-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            flex: 1;
+        }
+        
+        .upload-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .model-selection {
+            margin: 1.5rem 0;
+            padding: 0 2rem;
+        }
+        
+        .model-selection h3 {
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+        
+        .model-cards {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .model-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            width: 250px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .model-card.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+        
+        .model-card.selected.yolo {
+            border-color: var(--yolo-color);
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.2);
+        }
+        
+        .model-card.selected.ocr {
+            border-color: var(--ocr-color);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+        
+        .model-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--success-color);
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .model-card h4 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .model-card i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .model-card.yolo i {
+            color: var(--yolo-color);
+        }
+        
+        .model-card.ocr i {
+            color: var(--ocr-color);
+        }
+        
+        .model-card p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            margin: 1.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .upload-area p {
+            margin-bottom: 0.5rem;
+            color: #7f8c8d;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        
+        .btn.yolo-btn {
+            background-color: var(--yolo-color);
+        }
+        
+        .btn.yolo-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .result-container {
+            display: none;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .result-container h2 {
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.8rem;
+        }
+        
+        .result-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .result-image {
+            flex: 1;
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        .result-image img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-text {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .license-plate {
+            font-size: 2.5rem;
+            font-weight: bold;
+            padding: 1rem 2rem;
+            background-color: var(--light-color);
+            border-radius: 8px;
+            display: inline-block;
+            margin: 1rem 0;
+            letter-spacing: 0.1em;
+            color: var(--dark-color);
+            border: 1px solid #ddd;
+        }
+        
+        .model-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .model-badge.ocr {
+            background-color: var(--ocr-color);
+        }
+        
+        .model-badge.yolo {
+            background-color: var(--yolo-color);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .loading i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-msg {
+            color: var(--accent-color);
+            margin: 1rem 0;
+            padding: 0.8rem;
+            border-radius: 5px;
+            background-color: rgba(231, 76, 60, 0.1);
+            display: none;
+        }
+        
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .result-flex {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>License Plate Detection & OCR System</h1>
+        <p>Upload an image to automatically detect and read license plates</p>
+    </header>
+
+    <div class="container">
+        <div class="upload-container">
+            <h2>Select Model & Upload Image</h2>
+            
+            <div class="model-selection">
+                <h3>Choose Processing Model</h3>
+                <div class="model-cards">
+                    <div class="model-card yolo" data-model="yolo">
+                        <i class="fas fa-object-group"></i>
+                        <h4>ADNet Detection</h4>
+                        <p>Object detection to locate and read license plates in complex images with multiple objects.</p>
+                    </div>
+                    <div class="model-card ocr selected" data-model="ocr">
+                        <i class="fas fa-font"></i>
+                        <h4>OCR Model</h4>
+                        <p>Optical Character Recognition for license plates. Best for clear, frontal images of license plates.</p>
+                    </div>
+                </div>                
+            </div>
+            
+            <div class="upload-area" id="drop-area">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag and drop an image file here</p>
+                <p>or</p>
+                <label for="file-input" class="btn">Choose File</label>
+                <input type="file" id="file-input" accept=".jpg, .jpeg, .png">
+                <p id="file-name"></p>
+            </div>
+            <button id="process-btn" class="btn" disabled>Process Image</button>
+            <div class="error-msg" id="error-msg"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner"></i>
+            <p>Processing image, please wait...</p>
+        </div>
+
+        <div class="result-container" id="result-container">
+            <h2>Detection Results</h2>
+            <div class="result-flex">
+                <div class="result-image">
+                    <h3>Processed Image</h3>
+                    <img id="result-img" src="" alt="Processed license plate image">
+                </div>
+                <div class="result-text">
+                    <div id="model-badge" class="model-badge ocr">OCR Model</div>
+                    <h3>Detected License Plate</h3>
+                    <div class="license-plate" id="license-text">ABC123</div>
+                    <p id="detection-info">Text extracted with OCR processing</p>
+                    <button id="copy-btn" class="btn">
+                        <i class="fas fa-copy"></i> Copy Text
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>License Plate Detection & OCR System &copy; 2025 | ML_432 Project</p>
+    </footer>
+
+    <script>
+        // DOM elements
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.getElementById('file-name');
+        const processBtn = document.getElementById('process-btn');
+        const loading = document.getElementById('loading');
+        const resultContainer = document.getElementById('result-container');
+        const resultImg = document.getElementById('result-img');
+        const licenseText = document.getElementById('license-text');
+        const errorMsg = document.getElementById('error-msg');
+        const copyBtn = document.getElementById('copy-btn');
+        const modelCards = document.querySelectorAll('.model-card');
+        const modelBadge = document.getElementById('model-badge');
+        const detectionInfo = document.getElementById('detection-info');
+        
+        // Track selected model
+        let selectedModel = 'ocr';
+
+        // Model selection
+        modelCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove selected class from all cards
+                modelCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selected class to clicked card
+                card.classList.add('selected');
+                
+                // Update selected model
+                selectedModel = card.getAttribute('data-model');
+                
+                // Update process button class
+                if (selectedModel === 'yolo') {
+                    processBtn.classList.add('yolo-btn');
+                } else {
+                    processBtn.classList.remove('yolo-btn');
+                }
+            });
+        });
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        // Handle file input selection
+        fileInput.addEventListener('change', handleFiles);
+
+        // Process button click
+        processBtn.addEventListener('click', processImage);
+
+        // Copy button click
+        copyBtn.addEventListener('click', copyLicenseText);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(e) {
+            let files;
+            if (e.dataTransfer) {
+                files = e.dataTransfer.files;
+            } else if (e.target) {
+                files = e.target.files;
+            }
+
+            if (files && files.length > 0) {
+                const file = files[0];
+                if (file.type.match('image.*')) {
+                    fileName.textContent = file.name;
+                    processBtn.disabled = false;
+                    errorMsg.style.display = 'none';
+                } else {
+                    errorMsg.textContent = 'Please select an image file (JPG, JPEG, PNG)';
+                    errorMsg.style.display = 'block';
+                    processBtn.disabled = true;
+                }
+            }
+        }
+
+        function processImage() {
+            if (fileInput.files.length === 0) {
+                errorMsg.textContent = 'Please select a file first';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Show loading animation
+            loading.style.display = 'block';
+            resultContainer.style.display = 'none';
+            errorMsg.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('model_type', selectedModel);
+
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+
+                if (data.error) {
+                    errorMsg.textContent = data.error;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // Set model badge
+                modelBadge.className = `model-badge ${data.model_used}`;
+                modelBadge.textContent = data.model_used === 'ocr' ? 'OCR Model' : 'ADNet Detection';
+
+                // Update detection information text
+                detectionInfo.textContent = data.model_used === 'ocr' 
+                    ? 'Text extracted with OCR processing' 
+                    : 'License plate detected and recognized with ADNet';
+
+                // For YOLO: Display processed image with bounding boxes
+                if (data.model_used === "yolo" && data.plate_image) {
+                    resultImg.src = data.plate_image;  // Use processed YOLO image
+                } else {
+                    resultImg.src = data.image;  // Use original image for OCR
+                }
+
+                // Update detected license plate text
+                licenseText.textContent = data.license_plate;
+
+                // Show the results
+                resultContainer.style.display = 'block';
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                errorMsg.textContent = 'Error processing image: ' + error.message;
+                errorMsg.style.display = 'block';
+            });
+        }
+
+
+        function copyLicenseText() {
+            const text = licenseText.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
